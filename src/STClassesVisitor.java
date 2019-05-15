@@ -188,6 +188,8 @@ class STClassesVisitor extends GJDepthFirst<String,ScopeType>{
 
         base_ct=STD.GetClass(base_id);
         ct.SetBaseClass(base_ct);
+        n.f5.accept(this,ct);
+        n.f6.accept(this,ct);
 
 
         return null;

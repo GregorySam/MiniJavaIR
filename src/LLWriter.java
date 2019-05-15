@@ -11,6 +11,8 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     private final STDataStructure STD;
     private final PrintWriter pw;
 
+    private int current_temp;
+
 
     public STDataStructure GetSTD() {
             return STD;
@@ -38,14 +40,43 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
 
         ScopeType main_st=STD.GetMainVariables();
+        pw.println("define i32 @main(){");
 
         n.f0.accept(this,main_st);
-        n.f1.accept(this,null);
+        //n.f1.accept(this,null);
+
+        pw.println("}");
+        pw.close();
 
 
         return null;
     }
 
+
+    /**VarDecl
+     * Grammar production:
+     * f0 -> Type()
+     * f1 -> Identifier()
+     * f2 -> ";"
+     */
+
+    public String visit(VarDeclaration n,ScopeType st){
+        String type,llvm_type,id,llvm_id;
+
+        type =n.f0.accept(this,null);
+        id=n.f1.accept(this,null);
+        llvm_id="%"+id;
+
+        llvm_type= ScopeType.GetLlvmType(type);
+        st.InsertVariable(id,type);
+
+        pw.println("    "+llvm_id+" = alloca "+llvm_type);
+        pw.println();
+        return null;
+
+
+
+    }
 
 
     public String visit(IntegerType n, ScopeType st)

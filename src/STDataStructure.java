@@ -6,6 +6,27 @@ import java.util.*;
 
 class ScopeType
 {
+
+    public static  String GetLlvmType(String type)
+    {
+        if(type.equals("boolean"))
+        {
+            return "i1";
+        }
+        else if(type.equals("int"))
+        {
+            return "i32";
+        }
+        else if(type.equals("int[]"))
+        {
+            return "i32*";
+        }
+        else
+        {
+            return "i8*";
+        }
+    }
+
     final LinkedHashMap<String, String> Variables;
     private final String scopename;
 
@@ -101,25 +122,7 @@ class MethodType extends ScopeType
         return ClassPertain;
     }
 
-    private String GetLlvmType(String type)
-    {
-        if(type.equals("boolean"))
-        {
-            return "i1";
-        }
-        else if(type.equals("int"))
-        {
-            return "i32";
-        }
-        else if(type.equals("int[]"))
-        {
-            return "i32*";
-        }
-        else
-        {
-            return "i8*";
-        }
-    }
+
 
     public void PrintV_Table(PrintWriter pw){
 
@@ -212,53 +215,21 @@ class ClassType extends ScopeType
 
 
 
-    public boolean InsertMethod(MethodType MT)      //inseret method in map
+    public void InsertMethod(MethodType MT)      //inseret method in map
     {
 
 
         if(Methods.containsKey(MT.GetName())) {
-            return false;
+            Methods.put(MT.GetName(),MT);
+            return;
         }
-
-        //if there is no base class put method else
-        // check if same exists-override
-        if(BaseClass==null)
+        else
         {
             Methods.put(MT.GetName(),MT);
             MethodsOffsets.put(MT.GetName(),methods_offset);
             methods_offset=methods_offset+8;
-            return true;
         }
 
-        MethodType base_class_meth;
-
-        base_class_meth=BaseClass.GetMethod(MT.GetName());
-
-        if(base_class_meth==null) {
-            Methods.put(MT.GetName(),MT);
-            MethodsOffsets.put(MT.GetName(),methods_offset);
-            methods_offset=methods_offset+8;
-            return true;
-        }
-        else {
-
-            String base_funid;
-            base_funid=MT.GetId();
-
-            String base_class_funid=base_class_meth.GetId();
-            if(base_funid.equals(base_class_funid))
-            {
-                Methods.put(MT.GetName(),MT);
-
-                MethodsOffsets.put(MT.GetName(),methods_offset);
-                methods_offset=methods_offset+8;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
     }
 
     public String GetName(){return name;}
@@ -274,7 +245,7 @@ class ClassType extends ScopeType
         BaseClass=id;
         var_offset=BaseClass.GetVariablesOffset();
         methods_offset=BaseClass.GetMethodsOffset();
-        Methods=BaseClass.getMethods();
+        Methods=new LinkedHashMap<>(BaseClass.getMethods());
     }
 
     public MethodType GetMethod(String id) {            //search for method in curent class or base class
@@ -430,7 +401,7 @@ public class STDataStructure {
                 "    call void @exit(i32 1)\n" +
                 "    ret void\n" +
                 "}");
-        pw.close();
+
     }
 
 

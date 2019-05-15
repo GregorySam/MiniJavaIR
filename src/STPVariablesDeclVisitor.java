@@ -203,12 +203,7 @@ class STPVariablesDeclVisitor extends GJDepthFirst<String,ScopeType> {
         n.f4.accept(this,MT);
         n.f7.accept(this,MT);
 
-        if(!ct.InsertMethod(MT))
-        {
-            System.out.println("Method at "+MT.GetScopeName()+" already defined or overriding error");
-            STD.SetErrorFlag(true);
-
-        }
+        ct.InsertMethod(MT);
 
 
 

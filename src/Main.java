@@ -59,6 +59,7 @@ class Main {
 			LLWriter TCV=new LLWriter(STCV.GetSTD(),llfile);		//check statements and assignments
 			root.accept(TCV, null);
 
+
 //			STPVariablesDeclVisitor STPCTV=new STPVariablesDeclVisitor(STCV.GetSTD());
 //			root.accept(STPCTV, null);				//check variables declartion
 //			if(STPCTV.GetSTD().getErrorFlag())
