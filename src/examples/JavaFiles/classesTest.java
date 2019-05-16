@@ -8,6 +8,9 @@ class BubbleSort{
         boolean w;
         int[] lo;
 
+        w=1;
+        a=b+j;
+
     }
 
 

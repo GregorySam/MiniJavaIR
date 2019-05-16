@@ -400,7 +400,7 @@ public class STDataStructure {
                 "    call i32 (i8*, ...) @printf(i8* %_str)\n" +
                 "    call void @exit(i32 1)\n" +
                 "    ret void\n" +
-                "}");
+                "}\n");
 
     }
 
