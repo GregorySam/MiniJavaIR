@@ -8,8 +8,13 @@ class BubbleSort{
         boolean w;
         int[] lo;
 
-        w=1;
-        a=b+j;
+        a=0+1;
+
+
+
+        lo=new int[a+1];
+        j=lo.length;
+
 
     }
 
