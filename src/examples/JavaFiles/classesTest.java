@@ -1,24 +1,22 @@
-class BubbleSort{
-    public static void main(String[] a)
+class classesTest{
+    public static void main(String[] s)
     {
         int a;
         int b;
         int j;
-
-        boolean w;
-        int[] lo;
-
-        a=0+1;
+        A a2;
 
 
-
-        lo=new int[a+1];
-        j=lo.length;
 
 
     }
 
 
+}
+
+class A{
+
+    int j;
 
 }
 

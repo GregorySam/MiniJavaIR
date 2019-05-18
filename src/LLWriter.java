@@ -120,6 +120,68 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
+    public String visit(WhileStatement n,ScopeType st){
+
+        String bool,label1,label2,label3;
+
+        label1=NewLabel();
+        label2=NewLabel();
+        label3=NewLabel();
+
+
+        pw.println("    br label "+"%"+label1);
+        pw.println();
+        pw.println(label1+":");
+
+
+        bool=n.f2.accept(this,st);
+
+
+
+        pw.println("    "+"br i1 "+bool+", label "+"%"+label2+", label "+"%"+label3);
+        pw.println();
+        pw.println(label2+":");
+        n.f4.accept(this,st);
+        pw.println("    br label "+"%"+label1);
+        pw.println(label3+":");
+
+        return null;
+
+
+    }
+
+    public String visit(IfStatement n,ScopeType st){
+        String bool,label1,label2,label3;
+
+        bool=n.f2.accept(this,st);
+
+        label1=NewLabel();
+        label2=NewLabel();
+        label3=NewLabel();
+
+        pw.println("    "+"br i1 "+bool+", label "+"%"+label1+", label "+"%"+label2);
+        pw.println();
+
+        pw.println(label1+":");
+        n.f4.accept(this,st);
+        pw.println("    "+"br label"+"%"+label3);
+
+        pw.println();
+
+        pw.println(label2+":");
+        n.f6.accept(this,st);
+        pw.println("    "+"br label"+"%"+label3);
+
+        pw.println();
+        pw.println(label3+":");
+
+
+        return null;
+
+
+
+    }
+
 
     public String visit(PlusExpression n,ScopeType st) {
         String tmp1,tmp2,res;
@@ -147,6 +209,23 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         {
             return false;
         }
+    }
+
+    public String visit(AllocationExpression n,ScopeType st){
+
+        String id;
+        ClassType ct;
+        int var_offset;
+
+        ct=STD.GetClass(id);
+
+        id=n.f1.accept(this,st);
+        var_offset=ct.
+
+
+
+
+
     }
 
     public String visit(PrimaryExpression n,ScopeType st){
@@ -198,10 +277,69 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
+    public String visit(TimesExpression n,ScopeType st){
+        String tmp1,tmp2,res;
+
+        tmp1=n.f0.accept(this,st);
+        tmp2=n.f2.accept(this,st);
+
+        res=NewTemp();
+        pw.println("    "+res+" = mul i32 "+tmp1+", "+tmp2);
+
+
+        return res;
+
+
+    }
+
+
+
+
+    private void ArrayOObCheck(String offset,String limit){
+
+        String bool1,label1,label2;
+
+        bool1=NewTemp();
+        pw.println("    "+bool1+" = icmp slt i32 "+offset+", "+limit);
+
+
+        label1=NewLabel();
+        label2=NewLabel();
+
+        pw.println("    "+"br i1 "+bool1+", label "+"%"+label2+", label "+"%"+label1);
+        pw.println();
+        pw.println(label1+":");
+        pw.println("    "+"call void @throw_oob()");
+        pw.println("    "+"br label "+"%"+label2);
+        pw.println();
+        pw.println(label2+":");
+
+    }
+
     public String visit(ArrayAssignmentStatement n,ScopeType st){
-        String id;
+
+        String id,size,offset,ptr,res,arr,new_offset;
 
         id=n.f0.accept(this,st);
+
+        arr=NewTemp();
+        pw.println("    "+arr+" = load i32*, i32** "+"%"+id);
+
+        size=NewTemp();
+        pw.println("    "+size+" = load i32, i32* "+arr);
+
+        offset=n.f2.accept(this,st);
+
+        ArrayOObCheck(offset,size);
+
+        new_offset=NewTemp();
+        pw.println("    "+new_offset+" = add i32 "+offset+", 1");
+
+        ptr=NewTemp();
+        pw.println("    "+ptr+" = getelementptr i32, i32* "+arr+", i32 "+new_offset);
+
+        res=n.f5.accept(this,st);
+        pw.println("    "+"store i32 "+res+", i32* "+ptr);
 
         return null;
 
@@ -223,7 +361,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     public String visit(ArrayLookup n,ScopeType st){
 
-        String arr_var,offset_var,resp,res,arr_sz,element,bool,r_offset,label1,label2;
+        String arr_var,offset_var,resp,res,arr_sz,r_offset;
 
         arr_var=n.f0.accept(this,st);
         offset_var=n.f2.accept(this,st);
@@ -234,25 +372,13 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         pw.println("    "+arr_sz+" = "+"load i32, i32* "+arr_var);
 
 
+        ArrayOObCheck(offset_var,arr_sz);
+        ArrayOObCheck("0",offset_var);
+
+
+
         r_offset=NewTemp();
         pw.println("    "+r_offset+" = "+"add i32 "+offset_var+", 1");
-
-        bool=NewTemp();
-        pw.println("    "+bool+" = icmp ult i32 "+r_offset+", "+arr_sz);
-
-
-
-        label1=NewLabel();
-
-        label2=NewLabel();
-
-        pw.println("    "+"br i1 "+bool+", label "+"%"+label2+", label "+"%"+label1);
-        pw.println();
-        pw.println(label1+":");
-        pw.println("    "+"call void @throw_oob()");
-        pw.println("    "+"br label "+"%"+label2);
-        pw.println();
-        pw.println(label2+":");
 
         resp=NewTemp();
         pw.println("    "+resp+" = getelementptr i32, i32* "+arr_var+", i32 "+r_offset);
@@ -264,32 +390,18 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
 
 
-
-
-
     }
 
     public String visit(ArrayAllocationExpression n,ScopeType st){
 
-        String exp,allocsize,label1,label2,allocvoid,allocint,intpointer,bool;
+        String exp,allocsize,allocvoid,allocint;
 
         exp=n.f3.accept(this,st);
 
-        bool=NewTemp();
-        pw.println("    "+bool+" = icmp slt i32 "+exp+", 0");
-
-        label1=NewLabel();
-
-        label2=NewLabel();
 
 
-        pw.println("    "+"br i1 "+bool+", label "+"%"+label1+", label "+"%"+label2);
-        pw.println();
-        pw.println(label1+":");
-        pw.println("    "+"call void @throw_oob()");
-        pw.println("    "+"br label "+"%"+label2);
-        pw.println();
-        pw.println(label2+":");
+
+        ArrayOObCheck("0",exp);
 
 
 
@@ -309,6 +421,60 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
+    public String visit(PrintStatement n,ScopeType st){
+
+        String exp;
+
+        exp=n.f2.accept(this,st);
+
+        pw.println("    "+"call void (i32) @print_int(i32 "+exp+")");
+
+        return null;
+
+
+
+    }
+
+    public String visit(CompareExpression n,ScopeType st){
+        String exp1,exp2,res;
+
+        exp1=n.f0.accept(this,st);
+        exp2=n.f2.accept(this,st);
+
+        res=NewTemp();
+        pw.println("    "+res+" = icmp slt i32 "+exp1+", "+exp2);
+        return res;
+
+    }
+
+    public String visit(NotExpression n,ScopeType st){
+
+        String c,bool;
+        c= n.f1.accept(this,st);
+
+        bool=NewTemp();
+        pw.println("    "+bool+" = icmp eq i1 "+c+", 0");
+
+        return bool;
+
+    }
+
+    public String visit(AndExpression n,ScopeType st){
+
+        String c1,c2,res;
+
+        c1=n.f0.accept(this,st);
+        c2=n.f2.accept(this,st);
+
+        res=NewTemp();
+
+        pw.println("    "+res+" = and i1 "+c1+", "+c2);
+        return res;
+
+
+    }
+
+
     public String visit(Clause n,ScopeType st){
 
         return n.f0.accept(this,st);
@@ -325,7 +491,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
          */
 
     public String visit(VarDeclaration n,ScopeType st){
-        String type,llvm_type,id,llvm_id;
+        String type,llvm_type,id,llvm_id,tmp;
 
         type =n.f0.accept(this,null);
         id=n.f1.accept(this,null);
@@ -335,6 +501,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         st.InsertVariable(id,type);
 
         pw.println("    "+llvm_id+" = alloca "+llvm_type);
+
         pw.println();
         return null;
 
