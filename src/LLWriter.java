@@ -67,14 +67,116 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         current_label=0;
 
         n.f0.accept(this,main_st);
-        //n.f1.accept(this,null);
+
         pw.println("\n    ret i32 0");
         pw.println("}");
+        pw.println();
+        n.f1.accept(this,null);
         pw.close();
 
 
         return null;
     }
+
+    public String visit(ClassDeclaration n,ScopeType st){
+        String id;
+        ClassType ct;
+
+        id=n.f1.accept(this,null);
+        ct=STD.GetClass(id);
+
+
+        n.f4.accept(this,ct);
+        return null;
+
+
+    }
+
+    public String visit(ClassExtendsDeclaration n,ScopeType st){
+        String c_name;
+        ClassType c;
+
+        c_name=n.f3.accept(this,st);
+        c=STD.GetClass(c_name);
+
+        n.f4.accept(this,c);
+        return null;
+
+
+    }
+
+
+    public String visit(MethodDeclaration n,ScopeType st){
+        String id,type,classname,llvm_type,exp;
+        ClassType ct;
+
+        current_label=0;
+        current_temp=0;
+
+        type=n.f1.accept(this,st);
+        llvm_type=ScopeType.GetLlvmType(type);
+
+        id=n.f2.accept(this,st);
+
+        ct=(ClassType)st;
+
+        classname=ct.GetName();
+
+        pw.print("define "+llvm_type+" @"+classname+"."+id);
+        pw.print("(i8* %this, ");
+        n.f4.accept(this,ct);
+        pw.println(") {");
+        n.f7.accept(this,ct);
+        n.f8.accept(this,ct);
+        exp=n.f10.accept(this,ct);
+        pw.println("\n    ret "+llvm_type+" "+exp);
+
+        pw.println("}");
+
+
+        return null;
+
+
+
+    }
+
+    public String visit(FormalParameterList n,ScopeType st){
+
+
+        n.f0.accept(this,st);
+        n.f1.accept(this,st);
+
+        return null;
+
+    }
+
+    public String visit(FormalParameter n,ScopeType st){
+        String id,type,llvm_type;
+
+        type=n.f0.accept(this,st);
+        llvm_type=ScopeType.GetLlvmType(type);
+
+
+        pw.print(llvm_type);
+
+        id=n.f1.accept(this,st);
+        pw.print(" %."+id);
+
+
+        return null;
+
+    }
+
+    public String visit(FormalParameterTerm n,ScopeType st){
+        String comma;
+
+        pw.print(", ");
+        n.f1.accept(this,st);
+
+        return null;
+
+    }
+
 
 
     /**Statement
@@ -119,6 +221,108 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         return tmpvar;
 
     }
+
+    private static String ΜergeParameters(String types,String var){
+        String[] types_arr,var_arr;
+        int i,j;
+        String params="";
+
+        types_arr=types.split(",");
+        var_arr=var.split(" ");
+
+        for(i=1;i<types_arr.length;){
+            for(j=0;j<var_arr.length;){
+                params=params+", "+types_arr[i]+" "+var_arr[j];
+                i++;
+                j++;
+
+            }
+
+        }
+
+        return params;
+
+    }
+
+    public String visit(MessageSend n,ScopeType st){
+
+        String id,exp,meth_param_types,meth_param_exp,params;
+
+        String  temp1,temp2,temp3,temp4,temp5,temp6,llvm_type;
+        MethodType meth;
+
+        int offset;
+
+        exp=n.f0.accept(this,st);
+        id=n.f2.accept(this,st);
+
+        temp1=NewTemp();
+        pw.println("    "+temp1+" = bitcast i8* "+exp+" to i8***");
+
+        temp2=NewTemp();
+        pw.println("    "+temp2+" = load i8**, i8*** "+temp1);
+
+        temp3=NewTemp();
+        meth=STD.getMethod(id);
+
+        offset=meth.getOffset();
+        pw.println("    "+temp3+" = getelementptr i8*, i8** "+temp2+", i32 "+offset);
+
+        temp4=NewTemp();
+        pw.println("    "+temp4+" = load i8*, i8** "+temp3);
+
+        temp5=NewTemp();
+        meth_param_types=meth.Get_parametersIR();
+        llvm_type=ScopeType.GetLlvmType(meth.GetType());
+
+        pw.println("    "+temp5+" = bitcast i8* "+temp4+" to "+llvm_type+" (i8*"+meth_param_types+")"+"*");
+
+        meth_param_exp= n.f4.accept(this,st);
+
+        params=LLWriter.ΜergeParameters(meth_param_types,meth_param_exp);
+
+        temp6=NewTemp();
+
+        pw.println("    "+temp6+" = call "+llvm_type+" "+temp5+"(i8* "+exp+params+")");
+
+        return temp6;
+
+
+    }
+
+    public String visit(ExpressionList n,ScopeType st){
+
+        String exp;
+        int i;
+
+        exp=n.f0.accept(this,st);
+
+        exp=exp+n.f1.accept(this,st);
+
+        return exp;
+
+
+    }
+
+    public String visit(ExpressionTail n,ScopeType st){
+
+        String all_exp="";
+        int i;
+
+        for(i=0;i<n.f0.size();i++){
+            all_exp=all_exp+" "+n.f0.elementAt(i).accept(this,st);
+        }
+
+        return all_exp;
+
+    }
+
+    public String visit(ExpressionTerm n,ScopeType st){
+
+        return n.f1.accept(this,st);
+    }
+
+
 
     public String visit(WhileStatement n,ScopeType st){
 
@@ -213,16 +417,32 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     public String visit(AllocationExpression n,ScopeType st){
 
-        String id;
+        String id,temp1,temp2,temp3;
         ClassType ct;
-        int var_offset;
 
-        ct=STD.GetClass(id);
+        int var_offset,method_num;
+        int alloc;
 
         id=n.f1.accept(this,st);
-        var_offset=ct.
+        ct=STD.GetClass(id);
 
 
+        var_offset=ct.GetVariablesOffset();
+        alloc=var_offset+8;
+
+        temp1=NewTemp();
+        pw.println("    "+temp1+" = call i8* @calloc(i32 1, i32 "+alloc+")");
+
+        temp2=NewTemp();
+        pw.println("    "+temp2+" = bitcast i8* "+temp1+" to i8***");
+
+        temp3=NewTemp();
+
+        method_num=ct.getMethods().size();
+        pw.println("    "+temp3+" = getelementptr ["+method_num+" x i8*], ["+method_num+" x i8*]* "+"@."+ct.GetName()+"_vtable, i32 0, i32 0");
+        pw.println("    "+"store i8** "+temp3+", i8*** "+temp2);
+
+        return temp1;
 
 
 

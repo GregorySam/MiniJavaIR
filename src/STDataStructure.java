@@ -1,4 +1,6 @@
 
+import syntaxtree.MethodDeclaration;
+
 import java.io.PrintWriter;
 import java.util.*;
 
@@ -63,6 +65,12 @@ class MethodType extends ScopeType
     private final String type;
     private final List<String> ParametersTypes;
     private final ClassType ClassPertain;
+    private String parameters_ir;
+    private int offset;
+
+
+
+
 
     public MethodType(String name,String type,ClassType CT)
     {
@@ -94,6 +102,15 @@ class MethodType extends ScopeType
         }
     }
 
+    public int getOffset(){
+        return offset;
+    }
+
+
+    public void setOffset(int offset){
+
+        this.offset=offset;
+    }
 
     public void ChangeId(String a)                  //id of function
     {
@@ -134,8 +151,13 @@ class MethodType extends ScopeType
             parameters=parameters+","+GetLlvmType(par);
         }
 
+        this.parameters_ir=parameters;
         pw.print("i8* bitcast ("+type+" (i8*"+parameters+")* @"+ClassPertain.GetName()+"."+this.name+" to "+"i8*)");
 
+    }
+
+    public String Get_parametersIR(){
+        return parameters_ir;
     }
 
 
@@ -151,7 +173,6 @@ class ClassType extends ScopeType
     private LinkedHashMap<String ,Integer> VariablesOffsets;
 
     private int methods_offset;
-    private LinkedHashMap<String ,Integer> MethodsOffsets;
 
 
     public LinkedHashMap<String, MethodType> getMethods()
@@ -164,9 +185,9 @@ class ClassType extends ScopeType
         super("class "+n);
         name=n;
         Methods=new LinkedHashMap<>();
-        MethodsOffsets=new LinkedHashMap<>();
         VariablesOffsets=new LinkedHashMap<>();
         BaseClass=null;
+        methods_offset=0;
     }
     public boolean IsTypeOf(String id)
     {
@@ -202,12 +223,12 @@ class ClassType extends ScopeType
         }
     }
 
-    private int GetVariablesOffset()
+    public int GetVariablesOffset()
     {
         return var_offset;
     }
 
-    private int GetMethodsOffset()
+    public int GetMethodsOffset()
     {
         return methods_offset;
     }
@@ -215,20 +236,20 @@ class ClassType extends ScopeType
 
 
 
-    public void InsertMethod(MethodType MT)      //inseret method in map
+    public void InsertMethod(MethodType MT,STDataStructure std)      //inseret method in map
     {
 
 
-        if(Methods.containsKey(MT.GetName())) {
-            Methods.put(MT.GetName(),MT);
+        if(Methods.containsValue(MT)){
+            methods_offset=methods_offset+1;
             return;
         }
-        else
-        {
-            Methods.put(MT.GetName(),MT);
-            MethodsOffsets.put(MT.GetName(),methods_offset);
-            methods_offset=methods_offset+8;
-        }
+
+        MT.setOffset(methods_offset);
+        std.AddMethod(MT.GetName(),MT);
+
+        Methods.put(MT.GetName(),MT);
+        methods_offset=methods_offset+1;
 
     }
 
@@ -282,6 +303,8 @@ class ClassType extends ScopeType
         return Variables.get(id);
     }
 
+
+
     @Override
     public void InsertVariable(String id,String type)
     {
@@ -325,6 +348,7 @@ public class STDataStructure {
 
     private final ScopeType MainVariables;
     private final LinkedHashMap<String,ClassType> Classes;
+    private  HashMap<String,MethodType> Methods;
     private boolean error_flag;
 
 
@@ -332,6 +356,7 @@ public class STDataStructure {
         MainVariables=new ScopeType("Main");
         error_flag=false;
         Classes=new LinkedHashMap<String,ClassType>();
+        Methods=new HashMap<>();
     }
 
     public boolean getErrorFlag(){
@@ -363,6 +388,14 @@ public class STDataStructure {
 
         return Classes.get(id);
 
+    }
+
+    public MethodType getMethod(String meth_name){
+        return Methods.get(meth_name);
+    }
+
+    public void AddMethod(String meth_name,MethodType MT){
+        Methods.put(meth_name,MT);
     }
 
     public boolean FindClass(String id)

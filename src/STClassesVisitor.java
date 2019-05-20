@@ -142,7 +142,7 @@ class STClassesVisitor extends GJDepthFirst<String,ScopeType>{
         id=n.f2.accept(this,null);
 
         MethodType MT=new MethodType(id,type,ct);
-        ct.InsertMethod(MT);
+        ct.InsertMethod(MT,STD);
 
 
 
