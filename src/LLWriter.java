@@ -96,10 +96,10 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         String c_name;
         ClassType c;
 
-        c_name=n.f3.accept(this,st);
+        c_name=n.f1.accept(this,st);
         c=STD.GetClass(c_name);
 
-        n.f4.accept(this,c);
+        n.f6.accept(this,c);
         return null;
 
 
@@ -152,9 +152,6 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         if(types_params!=null){
             AllocParameters(types_params);
         }
-
-
-
 
 
         n.f7.accept(this,mt);
@@ -237,39 +234,65 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 ;
-    private void AccessThisField(String clas,String type){
+    private String AccessThisField(String clas,String type,String id){
         ClassType ct;
-
+        int offset;
+        String temp1,temp2;
 
 
         ct=STD.GetClass(clas);
+        offset=ct.getVariableOffset(id);
 
+        temp1=NewTemp();
+        temp2=NewTemp();
 
+        pw.println("    "+temp1+" = getelementptr i8, i8* %this, i32 "+offset);
+        pw.println("    "+temp2+" = bitcast i8* "+temp1+" to "+type+"*");
 
+        return temp2;
+
+    }
+
+    public String visit(ThisExpression n,ScopeType st){
+
+        return "%"+n.f0.tokenImage;
 
     }
 
     public String visit(AssignmentStatement n,ScopeType st) {
 
-        String type,id,llvm_type,tmp;
+        String type,id,llvm_type,tmp1,tmp2;
 
 
         id=n.f0.accept(this,st);
 
         type=st.GetType(id);
 
+
+
         if(type.indexOf('.')>0){
 
-            String[] c_t=type.split(".");
-            AccessThisField(c_t[0],c_t[1]);
+            String[] c_t=type.split("\\.");
+
+            llvm_type=ScopeType.GetLlvmType(c_t[1]);
+
+            tmp1=n.f2.accept(this,st);
+
+            tmp2=AccessThisField(c_t[0],llvm_type,id);
+
+            pw.println("    "+"store "+llvm_type+" "+tmp1+", "+llvm_type+"* "+tmp2);
+
+        }
+        else{
+
+            llvm_type=ScopeType.GetLlvmType(type);
+            tmp1=n.f2.accept(this,st);
+            pw.println("    "+"store "+llvm_type+" "+tmp1+", "+llvm_type+"* "+"%"+id);
 
         }
 
-        llvm_type=ScopeType.GetLlvmType(type);
 
-        tmp=n.f2.accept(this,st);
 
-        pw.println("    "+"store "+llvm_type+" "+tmp+", "+llvm_type+"* "+"%"+id);
         return null;
 
     }
@@ -293,12 +316,8 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         var_arr=var.split(" ");
 
         for(i=1;i<types_arr.length;){
-            for(j=0;j<var_arr.length;){
-                params=params+", "+types_arr[i]+" "+var_arr[j];
+                params=params+", "+types_arr[i]+" "+var_arr[i-1];
                 i++;
-                j++;
-
-            }
 
         }
 
@@ -341,7 +360,12 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         meth_param_exp= n.f4.accept(this,st);
 
-        params=LLWriter.MergeParameters(meth_param_types,meth_param_exp);
+        if(meth_param_exp==null || meth_param_types==null){
+            params="";
+        }else{
+            params=LLWriter.MergeParameters(meth_param_types,meth_param_exp);
+        }
+
 
         temp6=NewTemp();
 
@@ -490,7 +514,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
 
         var_offset=ct.GetVariablesOffset();
-        alloc=var_offset+8;
+        alloc=var_offset;
 
         temp1=NewTemp();
         pw.println("    "+temp1+" = call i8* @calloc(i32 1, i32 "+alloc+")");
@@ -510,9 +534,14 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
+    public String visit(BracketExpression n,ScopeType st){
+        return n.f1.accept(this,st);
+
+    }
+
     public String visit(PrimaryExpression n,ScopeType st){
 
-        String id,type,llvm_type,res;
+        String id,type,llvm_type,res,tmp1;
 
         id=n.f0.accept(this,st);
 
@@ -530,14 +559,27 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
             return id;
         }
 
-
         type=st.GetType(id);
-
-        llvm_type=ScopeType.GetLlvmType(type);
 
         res=NewTemp();
 
-        pw.println("    "+res+" = load "+llvm_type+", "+llvm_type+"* "+"%"+id);
+        if(type.indexOf('.')>0){
+
+            String[] c_t=type.split("\\.");
+
+            llvm_type=ScopeType.GetLlvmType(c_t[1]);
+
+            tmp1=AccessThisField(c_t[0],llvm_type,id);
+
+            pw.println("    "+res+" = load "+llvm_type+", "+llvm_type+"* "+tmp1);
+
+        }
+        else{
+
+            llvm_type=ScopeType.GetLlvmType(type);
+            pw.println("    "+res+" = load "+llvm_type+", "+llvm_type+"* "+"%"+id);
+
+        }
 
         return res;
 
@@ -582,7 +624,13 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         String bool1,label1,label2;
 
         bool1=NewTemp();
-        pw.println("    "+bool1+" = icmp slt i32 "+offset+", "+limit);
+        if(offset.equals("0")){
+            pw.println("    "+bool1+" = icmp sle i32 "+offset+", "+limit);
+        }
+        else{
+            pw.println("    "+bool1+" = icmp slt i32 "+offset+", "+limit);
+        }
+
 
 
         label1=NewLabel();
@@ -600,12 +648,27 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     public String visit(ArrayAssignmentStatement n,ScopeType st){
 
-        String id,size,offset,ptr,res,arr,new_offset;
+        String id,size,offset,ptr,res,arr,new_offset,type,tmp1;
 
         id=n.f0.accept(this,st);
+        type=st.GetType(id);
 
         arr=NewTemp();
-        pw.println("    "+arr+" = load i32*, i32** "+"%"+id);
+
+        if(type.indexOf('.')>0){
+
+            String[] c_t=type.split("\\.");
+
+            tmp1=AccessThisField(c_t[0],"i32*",id);
+
+            pw.println("    "+arr+" = load i32*, i32** "+tmp1);
+
+        }
+        else{
+
+            pw.println("    "+arr+" = load i32*, i32** "+"%"+id);
+        }
+
 
         size=NewTemp();
         pw.println("    "+size+" = load i32, i32* "+arr);
@@ -613,6 +676,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         offset=n.f2.accept(this,st);
 
         ArrayOObCheck(offset,size);
+        ArrayOObCheck("0",offset);
 
         new_offset=NewTemp();
         pw.println("    "+new_offset+" = add i32 "+offset+", 1");

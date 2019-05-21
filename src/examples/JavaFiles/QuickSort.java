@@ -96,14 +96,14 @@ class QS{
 	number = new int[sz] ;
 	
 	number[0] = 20 ;
-	number[1] = 7  ; 
+	number[1] = 7  ;
 	number[2] = 12 ;
 	number[3] = 18 ;
-	number[4] = 2  ; 
+	number[4] = 2  ;
 	number[5] = 11 ;
-	number[6] = 6  ; 
-	number[7] = 9  ; 
-	number[8] = 19 ; 
+	number[6] = 6  ;
+	number[7] = 9  ;
+	number[8] = 19 ;
 	number[9] = 5  ;
 	
 	return 0 ;	

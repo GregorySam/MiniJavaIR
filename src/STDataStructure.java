@@ -187,7 +187,8 @@ class ClassType extends ScopeType
         Methods=new LinkedHashMap<>();
         VariablesOffsets=new LinkedHashMap<>();
         BaseClass=null;
-        methods_offset=0;
+        methods_offset=-1;
+        var_offset=8;
     }
     public boolean IsTypeOf(String id)
     {
@@ -240,16 +241,19 @@ class ClassType extends ScopeType
     {
 
 
-        if(Methods.containsValue(MT)){
-            methods_offset=methods_offset+1;
+        if(Methods.containsKey(MT.GetName())){
+            MT.setOffset(std.getMethod(MT.GetName()).getOffset());
+            Methods.put(MT.GetName(),MT);
             return;
         }
+
+        methods_offset=methods_offset+1;
 
         MT.setOffset(methods_offset);
         std.AddMethod(MT.GetName(),MT);
 
         Methods.put(MT.GetName(),MT);
-        methods_offset=methods_offset+1;
+
 
     }
 
@@ -267,6 +271,7 @@ class ClassType extends ScopeType
         var_offset=BaseClass.GetVariablesOffset();
         methods_offset=BaseClass.GetMethodsOffset();
         Methods=new LinkedHashMap<>(BaseClass.getMethods());
+
     }
 
     public MethodType GetMethod(String id) {            //search for method in curent class or base class
@@ -301,6 +306,23 @@ class ClassType extends ScopeType
         }
 
         return Variables.get(id);
+    }
+
+    public int getVariableOffset(String id){
+
+        if(VariablesOffsets.get(id)==null)
+        {
+            if(BaseClass==null)
+            {
+                return -1;
+            }
+            else
+            {
+                return BaseClass.getVariableOffset(id);
+            }
+        }
+
+        return VariablesOffsets.get(id);
     }
 
 
