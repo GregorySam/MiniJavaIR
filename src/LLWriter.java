@@ -1,8 +1,6 @@
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
 class LLWriter extends GJDepthFirst<String,ScopeType> {
@@ -34,11 +32,6 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         return l;
     }
-
-
-    public STDataStructure GetSTD() {
-            return STD;
-         }
 
 
     public LLWriter(STDataStructure newSTD, PrintWriter fo)
@@ -108,7 +101,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     private  void AllocParameters(String types_params){
         String[] t_p,temp;
         String type,param;
-        int i,j;
+        int i;
 
         t_p=types_params.split(",");
 
@@ -233,7 +226,6 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         return null;
 
     }
-;
     private String AccessThisField(String clas,String type,String id){
         ClassType ct;
         int offset;
@@ -309,7 +301,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     private static String MergeParameters(String types,String var){
         String[] types_arr,var_arr;
-        int i,j;
+        int i;
         String params="";
 
         types_arr=types.split(",");
@@ -379,7 +371,6 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     public String visit(ExpressionList n,ScopeType st){
 
         String exp;
-        int i;
 
         exp=n.f0.accept(this,st);
 
@@ -837,7 +828,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
          */
 
     public String visit(VarDeclaration n,ScopeType st){
-        String type,llvm_type,id,llvm_id,tmp;
+        String type,llvm_type,id,llvm_id;
 
         type =n.f0.accept(this,null);
         id=n.f1.accept(this,null);

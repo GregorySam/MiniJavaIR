@@ -1,6 +1,3 @@
-
-import syntaxtree.MethodDeclaration;
-
 import java.io.PrintWriter;
 import java.util.*;
 
@@ -11,26 +8,20 @@ class ScopeType
 
     public static  String GetLlvmType(String type)
     {
-        if(type.equals("boolean"))
-        {
-            return "i1";
-        }
-        else if(type.equals("int"))
-        {
-            return "i32";
-        }
-        else if(type.equals("int[]"))
-        {
-            return "i32*";
-        }
-        else
-        {
-            return "i8*";
+        switch (type) {
+            case "boolean":
+                return "i1";
+            case "int":
+                return "i32";
+            case "int[]":
+                return "i32*";
+            default:
+                return "i8*";
         }
     }
 
     final LinkedHashMap<String, String> Variables;
-    private final String scopename;
+
 
 
     public void InsertVariable(String id, String p)              //Insert viaribale if dows not exist
@@ -38,14 +29,9 @@ class ScopeType
         Variables.put(id,p);
     }
 
-    public String GetScopeName(){               //get class-method name
-        return scopename;
-    }
 
-
-    public ScopeType(String name)
+    public ScopeType()
     {
-        this.scopename=name;
         Variables =new LinkedHashMap<>();
     }
 
@@ -74,7 +60,6 @@ class MethodType extends ScopeType
 
     public MethodType(String name,String type,ClassType CT)
     {
-        super("class "+CT.GetName()+" "+name);
         this.name=name;
         this.type=type;
         this.id=type+name;
@@ -129,18 +114,6 @@ class MethodType extends ScopeType
     }
 
 
-    public String GetId()
-    {
-        return id;
-    }
-
-    public ClassType getClassPertain()
-    {
-        return ClassPertain;
-    }
-
-
-
     public void PrintV_Table(PrintWriter pw){
 
         String type=GetLlvmType(this.type);
@@ -170,7 +143,7 @@ class ClassType extends ScopeType
     private LinkedHashMap<String, MethodType> Methods;
 
     private int var_offset;
-    private LinkedHashMap<String ,Integer> VariablesOffsets;
+    private final LinkedHashMap<String ,Integer> VariablesOffsets;
 
     private int methods_offset;
 
@@ -182,7 +155,6 @@ class ClassType extends ScopeType
 
     public ClassType(String n)
     {
-        super("class "+n);
         name=n;
         Methods=new LinkedHashMap<>();
         VariablesOffsets=new LinkedHashMap<>();
@@ -190,37 +162,18 @@ class ClassType extends ScopeType
         methods_offset=-1;
         var_offset=8;
     }
-    public boolean IsTypeOf(String id)
-    {
-        if(id.equals(name))
-        {
-            return true;
-        }
-
-        if(BaseClass==null)
-        {
-            return false;
-        }
-        return BaseClass.IsTypeOf(id);
-
-    }
 
     static private int GetSize(String type)         //get offset size of types
     {
-        if(type.equals("int"))
-        {
-           return 4;
-        }
-        else if(type.equals("int[]"))
-        {
-            return 8;
-        }
-        else if(type.equals("boolean")){
-            return 1;
-        }
-        else
-        {
-            return 8;
+        switch (type) {
+            case "int":
+                return 4;
+            case "int[]":
+                return 8;
+            case "boolean":
+                return 1;
+            default:
+                return 8;
         }
     }
 
@@ -229,7 +182,7 @@ class ClassType extends ScopeType
         return var_offset;
     }
 
-    public int GetMethodsOffset()
+    private int GetMethodsOffset()
     {
         return methods_offset;
     }
@@ -258,11 +211,6 @@ class ClassType extends ScopeType
     }
 
     public String GetName(){return name;}
-
-    public boolean FindMethod(String id)
-    {
-        return  Methods.get(id)!=null;
-    }
 
 
     public void SetBaseClass(ClassType id)
@@ -349,7 +297,7 @@ class ClassType extends ScopeType
         pw.print("["+Methods.size()+" x i8*] [");
         i=1;
         for (Map.Entry<String, MethodType> entry : Methods.entrySet()) {
-            String key = entry.getKey();
+
             MethodType mt=entry.getValue();
 
             mt.PrintV_Table(pw);
@@ -370,31 +318,19 @@ public class STDataStructure {
 
     private final ScopeType MainVariables;
     private final LinkedHashMap<String,ClassType> Classes;
-    private  HashMap<String,MethodType> Methods;
-    private boolean error_flag;
+    private final HashMap<String,MethodType> Methods;
 
 
     public STDataStructure(){
-        MainVariables=new ScopeType("Main");
-        error_flag=false;
-        Classes=new LinkedHashMap<String,ClassType>();
+        MainVariables=new ScopeType();
+        Classes= new LinkedHashMap<>();
         Methods=new HashMap<>();
     }
-
-    public boolean getErrorFlag(){
-        return error_flag;
-    }
-
 
 
     public ScopeType GetMainVariables()
     {
         return MainVariables;
-    }
-
-    public void SetErrorFlag(boolean f)
-    {
-        error_flag=f;
     }
 
     public void InsertClass(String id)
@@ -418,11 +354,6 @@ public class STDataStructure {
 
     public void AddMethod(String meth_name,MethodType MT){
         Methods.put(meth_name,MT);
-    }
-
-    public boolean FindClass(String id)
-    {
-        return Classes.containsKey(id);
     }
 
     public void WriteV_TablesToFile(PrintWriter pw)

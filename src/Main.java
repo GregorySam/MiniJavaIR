@@ -42,50 +42,22 @@ class Main {
 		exit(0);
 	}
 	try{
-		for(int i=0;i<args.length;i++)						//for every file
-		{
-			fis = new FileInputStream(args[i]);
+		for (String arg : args) {
+			fis = new FileInputStream(arg);
 
 
-			MiniJavaParser parser = new   MiniJavaParser(fis);
+			MiniJavaParser parser = new MiniJavaParser(fis);
 
 			STClassesVisitor STCV = new STClassesVisitor();
-			Goal root = parser.Goal();						//check syntax
+			Goal root = parser.Goal();                        //check syntax
 
-			root.accept(STCV, null);						//check class declaration
+			root.accept(STCV, null);                        //check class declaration
 
-			PrintWriter llfile=GetLLFile(args[i]);
+			PrintWriter llfile = GetLLFile(arg);
 
-			LLWriter TCV=new LLWriter(STCV.GetSTD(),llfile);		//check statements and assignments
+			LLWriter TCV = new LLWriter(STCV.GetSTD(), llfile);        //check statements and assignments
 			root.accept(TCV, null);
-
-
-//			STPVariablesDeclVisitor STPCTV=new STPVariablesDeclVisitor(STCV.GetSTD());
-//			root.accept(STPCTV, null);				//check variables declartion
-//			if(STPCTV.GetSTD().getErrorFlag())
-//			{
-//				System.out.println("////////////////////////////////////////////"+"\n");
-//				continue;
-//			}
-//
-//
-//			LLWriter TCV=new LLWriter(STCV.GetSTD());		//check statements and assignments
-//			root.accept(TCV, null);
-//
-//			if(TCV.GetSTD().getErrorFlag())
-//			{
-//				System.out.println("////////////////////////////////////////////"+"\n");
-//				continue;
-//			}
-//			else{
-//				System.err.println("Program evaluated successfully.");
-//				TCV.GetSTD().PrintOffsets();								//Print classes offsets
-//			}
-//
-//			System.out.println("////////////////////////////////////////////"+"\n");
 		}
-
-
 
 	}
 	catch(ParseException ex){
