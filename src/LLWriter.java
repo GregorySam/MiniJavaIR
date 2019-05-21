@@ -123,7 +123,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         classname=ct.GetName();
 
         pw.print("define "+llvm_type+" @"+classname+"."+id);
-        pw.print("(i8* %this, ");
+        pw.print("(i8* %this");
         n.f4.accept(this,ct);
         pw.println(") {");
         n.f7.accept(this,ct);
@@ -157,10 +157,9 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         llvm_type=ScopeType.GetLlvmType(type);
 
 
-        pw.print(llvm_type);
 
         id=n.f1.accept(this,st);
-        pw.print(" %."+id);
+        pw.print(", "+llvm_type+" %."+id);
 
 
         return null;
@@ -168,9 +167,8 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     }
 
     public String visit(FormalParameterTerm n,ScopeType st){
-        String comma;
 
-        pw.print(", ");
+
         n.f1.accept(this,st);
 
         return null;

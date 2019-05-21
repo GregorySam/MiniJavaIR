@@ -6,10 +6,6 @@ class classesTest{
         int j;
         A a2;
 
-        a=0;
-        b=0;
-        j=0;
-        j=a2.fo(a,b,j);
 
 
 
@@ -33,17 +29,10 @@ class A{
         int l;
         int k;
         boolean a;
-
-        a=1;
-        if(a){
-            k=1;
-        }
-        else{
-            l=1;
-        }
+        f=1;
 
 
-        return k;
+        return 0;
     }
 
 }
