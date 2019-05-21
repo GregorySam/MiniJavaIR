@@ -105,10 +105,31 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
+    private  void AllocParameters(String types_params){
+        String[] t_p,temp;
+        String type,param;
+        int i,j;
+
+        t_p=types_params.split(",");
+
+        for(i=0;i<t_p.length;i++){
+
+            temp=t_p[i].split(" ");
+            type=temp[0];
+            param=temp[1];
+
+            pw.println("    "+"%"+param+" = alloca "+type);
+            pw.println("    "+"store "+type+"%."+param+", "+type+"* "+"%"+param);
+
+        }
+
+    }
+
 
     public String visit(MethodDeclaration n,ScopeType st){
-        String id,type,classname,llvm_type,exp;
+        String id,type,classname,llvm_type,exp,types_params;
         ClassType ct;
+        MethodType mt;
 
         current_label=0;
         current_temp=0;
@@ -121,14 +142,24 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         ct=(ClassType)st;
 
         classname=ct.GetName();
+        mt=ct.GetMethod(id);
 
         pw.print("define "+llvm_type+" @"+classname+"."+id);
         pw.print("(i8* %this");
-        n.f4.accept(this,ct);
+        types_params=n.f4.accept(this,mt);
+
         pw.println(") {");
-        n.f7.accept(this,ct);
-        n.f8.accept(this,ct);
-        exp=n.f10.accept(this,ct);
+        if(types_params!=null){
+            AllocParameters(types_params);
+        }
+
+
+
+
+
+        n.f7.accept(this,mt);
+        n.f8.accept(this,mt);
+        exp=n.f10.accept(this,mt);
         pw.println("\n    ret "+llvm_type+" "+exp);
 
         pw.println("}");
@@ -142,36 +173,48 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     public String visit(FormalParameterList n,ScopeType st){
 
+        String types_params;
 
-        n.f0.accept(this,st);
-        n.f1.accept(this,st);
+        types_params=n.f0.accept(this,st);
+        types_params=types_params+n.f1.accept(this,st);
 
-        return null;
+
+        return types_params;
+
+    }
+
+    public String visit(FormalParameterTail n,ScopeType st){
+
+        int i;
+        String params_types="";
+        for(i=0;i<n.f0.size();i++){
+
+            params_types=params_types+","+n.f0.elementAt(i).accept(this,st);
+        }
+        return params_types;
 
     }
 
     public String visit(FormalParameter n,ScopeType st){
-        String id,type,llvm_type;
+        String id,type,llvm_type,type_param;
 
         type=n.f0.accept(this,st);
         llvm_type=ScopeType.GetLlvmType(type);
 
-
-
         id=n.f1.accept(this,st);
+
+        type_param=llvm_type+" "+id;
         pw.print(", "+llvm_type+" %."+id);
 
 
-        return null;
+        return type_param;
 
     }
 
     public String visit(FormalParameterTerm n,ScopeType st){
 
 
-        n.f1.accept(this,st);
-
-        return null;
+        return n.f1.accept(this,st);
 
     }
 
@@ -193,14 +236,35 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         return null;
 
     }
+;
+    private void AccessThisField(String clas,String type){
+        ClassType ct;
+
+
+
+        ct=STD.GetClass(clas);
+
+
+
+
+    }
 
     public String visit(AssignmentStatement n,ScopeType st) {
 
-        String type,id,llvm_id,llvm_type,tmp;
+        String type,id,llvm_type,tmp;
 
 
         id=n.f0.accept(this,st);
+
         type=st.GetType(id);
+
+        if(type.indexOf('.')>0){
+
+            String[] c_t=type.split(".");
+            AccessThisField(c_t[0],c_t[1]);
+
+        }
+
         llvm_type=ScopeType.GetLlvmType(type);
 
         tmp=n.f2.accept(this,st);
@@ -220,7 +284,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     }
 
-    private static String ΜergeParameters(String types,String var){
+    private static String MergeParameters(String types,String var){
         String[] types_arr,var_arr;
         int i,j;
         String params="";
@@ -277,7 +341,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         meth_param_exp= n.f4.accept(this,st);
 
-        params=LLWriter.ΜergeParameters(meth_param_types,meth_param_exp);
+        params=LLWriter.MergeParameters(meth_param_types,meth_param_exp);
 
         temp6=NewTemp();
 

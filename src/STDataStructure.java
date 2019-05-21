@@ -89,7 +89,7 @@ class MethodType extends ScopeType
         if(Variables.get(id)==null)
         {
 
-            return ClassPertain.GetType(id);
+            return ClassPertain.GetName()+"."+ClassPertain.GetType(id);
 
         }
         else
