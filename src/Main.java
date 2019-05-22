@@ -16,7 +16,8 @@ class Main {
 
 
 		try {
-			writer = new PrintWriter("../outfiles/"+fn[0]+".ll");
+			writer = new PrintWriter("./"+fn[fn.length-2]+".ll");
+
 		}
 		catch(FileNotFoundException ex) {
 			System.err.println(ex.getMessage());
