@@ -2,6 +2,7 @@ import visitor.GJDepthFirst;
 import syntaxtree.*;
 
 import java.io.PrintWriter;
+import java.util.HashMap;
 
 class LLWriter extends GJDepthFirst<String,ScopeType> {
 
@@ -11,6 +12,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     private int current_temp;
     private int current_label;
+    private String currentClassType;
 
     private String NewTemp()
     {
@@ -38,6 +40,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     {
         STD=newSTD;
         pw=fo;
+        currentClassType="";
     }
 
 
@@ -319,7 +322,10 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
     public String visit(MessageSend n,ScopeType st){
 
-        String id,exp,meth_param_types,meth_param_exp,params;
+        String id,classtype_exp,meth_param_types,meth_param_exp,params,classtype,exp,meth_type;
+        String[] c_e;
+
+        ClassType ct;
 
         String  temp1,temp2,temp3,temp4,temp5,temp6,llvm_type;
         MethodType meth;
@@ -327,6 +333,10 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         int offset;
 
         exp=n.f0.accept(this,st);
+
+
+        ct=STD.GetClass(currentClassType);
+
         id=n.f2.accept(this,st);
 
         temp1=NewTemp();
@@ -336,7 +346,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         pw.println("    "+temp2+" = load i8**, i8*** "+temp1);
 
         temp3=NewTemp();
-        meth=STD.getMethod(id);
+        meth=ct.GetMethod(id);
 
         offset=meth.getOffset();
         pw.println("    "+temp3+" = getelementptr i8*, i8** "+temp2+", i32 "+offset);
@@ -346,11 +356,20 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         temp5=NewTemp();
         meth_param_types=meth.Get_parametersIR();
-        llvm_type=ScopeType.GetLlvmType(meth.GetType());
+        meth_type=meth.GetType();
+
+
+        llvm_type=ScopeType.GetLlvmType(meth_type);
+
+
 
         pw.println("    "+temp5+" = bitcast i8* "+temp4+" to "+llvm_type+" (i8*"+meth_param_types+")"+"*");
 
         meth_param_exp= n.f4.accept(this,st);
+
+        if(llvm_type.equals("i8")){
+            currentClassType=meth_type;
+        }
 
         if(meth_param_exp==null || meth_param_types==null){
             params="";
@@ -362,6 +381,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         temp6=NewTemp();
 
         pw.println("    "+temp6+" = call "+llvm_type+" "+temp5+"(i8* "+exp+params+")");
+
 
         return temp6;
 
@@ -502,7 +522,7 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         id=n.f1.accept(this,st);
         ct=STD.GetClass(id);
-
+        currentClassType=id;
 
         var_offset=ct.GetVariablesOffset();
         alloc=var_offset;
@@ -533,8 +553,15 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
     public String visit(PrimaryExpression n,ScopeType st){
 
         String id,type,llvm_type,res,tmp1;
+        String classtype;
+
 
         id=n.f0.accept(this,st);
+
+        res=NewTemp();
+
+
+
 
         if(id.startsWith("%"))
         {
@@ -552,7 +579,8 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
 
         type=st.GetType(id);
 
-        res=NewTemp();
+
+
 
         if(type.indexOf('.')>0){
 
@@ -568,6 +596,14 @@ class LLWriter extends GJDepthFirst<String,ScopeType> {
         else{
 
             llvm_type=ScopeType.GetLlvmType(type);
+            if(llvm_type.equals("i8*")){
+                classtype=type;
+                pw.println("    "+res+" = load "+llvm_type+", "+llvm_type+"* "+"%"+id);
+
+                currentClassType=classtype;
+
+                return res;
+            }
             pw.println("    "+res+" = load "+llvm_type+", "+llvm_type+"* "+"%"+id);
 
         }

@@ -190,12 +190,12 @@ class ClassType extends ScopeType
 
 
 
-    public void InsertMethod(MethodType MT,STDataStructure std)      //inseret method in map
+    public void InsertMethod(MethodType MT)      //inseret method in map
     {
 
 
         if(Methods.containsKey(MT.GetName())){
-            MT.setOffset(std.getMethod(MT.GetName()).getOffset());
+            MT.setOffset(BaseClass.GetMethod(MT.GetName()).getOffset());
             Methods.put(MT.GetName(),MT);
             return;
         }
@@ -203,7 +203,6 @@ class ClassType extends ScopeType
         methods_offset=methods_offset+1;
 
         MT.setOffset(methods_offset);
-        std.AddMethod(MT.GetName(),MT);
 
         Methods.put(MT.GetName(),MT);
 
@@ -282,6 +281,7 @@ class ClassType extends ScopeType
         VariablesOffsets.put(id,var_offset);
         var_offset=var_offset+GetSize(type);
 
+
     }
 
     public void PrintV_Table(PrintWriter pw)
@@ -318,13 +318,13 @@ public class STDataStructure {
 
     private final ScopeType MainVariables;
     private final LinkedHashMap<String,ClassType> Classes;
-    private final HashMap<String,MethodType> Methods;
+
 
 
     public STDataStructure(){
         MainVariables=new ScopeType();
         Classes= new LinkedHashMap<>();
-        Methods=new HashMap<>();
+
     }
 
 
@@ -348,13 +348,6 @@ public class STDataStructure {
 
     }
 
-    public MethodType getMethod(String meth_name){
-        return Methods.get(meth_name);
-    }
-
-    public void AddMethod(String meth_name,MethodType MT){
-        Methods.put(meth_name,MT);
-    }
 
     public void WriteV_TablesToFile(PrintWriter pw)
     {
